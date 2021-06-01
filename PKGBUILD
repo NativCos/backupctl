@@ -12,7 +12,6 @@ makedepends=('borg' 'openssh')
 makedepends=('make')
 
 package() {
-  cd ${srcdir}
   echo $PWD
   make DESTDIR="${pkgdir}" install
 }
