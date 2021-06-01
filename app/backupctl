@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Backup to a remote location using Borg.
+# To restore: borg extract username@offsite_server:/path/to/backup_repo::backup_name
+
+
+# Configs
+source /etc/backupctl/conf
+export BORG_RSH="ssh -i ${SSH_PATH_TO_KEY}"
+export BORG_REPO=${SSH_PATH_TO_REPO}
+export BORG_PASSPHRASE=$(cat /etc/backupctl/passphrase)
+
+
+case $1 in
+  "")
+    borg init --encryption=repokey ::
+  ;;
+  "create")
+    # Backup system
+    BACKUP_NAME=$(hostname)-$(date +"%H:%M:%S-%d-%b-%Y")
+    borg create -v --stats --progress ::${BACKUP_NAME} / --patterns-from /etc/borg-backup_this_system/excludefile --compression lz4
+    exit 0
+  ;;
+  "prune")
+    # Prune extra backups
+    borg prune --prefix $(hostname)- --keep-daily=3 --keep-weekly=1
+    exit 0
+  ;;
+  "list")
+    borg list ::
+    exit 0
+  ;;
+  "help")
+    echo "backupctl [create | prune | help]"
+    exit 0
+  ;;
+  *)
+    echo "Unknow command..."
+    exit 1
+esac
