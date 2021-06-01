@@ -1,7 +1,7 @@
 VERSION = 1.0
 
 # paths
-DESTDIR= 
+DESTDIR=''
 
 
 install:
