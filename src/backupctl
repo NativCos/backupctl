@@ -22,7 +22,7 @@ case $1 in
   ;;
   "prune")
     # Prune extra backups
-    borg prune --prefix $(hostname)- --keep-daily=3 --keep-weekly=1
+    borg prune --prefix $(hostname)- ${@:2}
     exit 0
   ;;
   "list")
@@ -33,7 +33,7 @@ case $1 in
     borg extract ::$2
   ;;
   "help")
-    echo "backupctl [ init | create | prune | extract <<backup name>> | help ]"
+    echo "backupctl [ init | create | prune [--keep-daily=3 --keep-weekly=1] | extract <<backup name>> | help ]"
     exit 0
   ;;
   *)

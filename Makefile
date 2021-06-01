@@ -20,6 +20,7 @@ install:
 
 uninstall:
 	rm -f ${DESTDIR}/usr/bin/backupctl
-	rm -fr ${DESTDIR}/etc/backupctl/
+	rm -f ${DESTDIR}/etc/backupctl/excludefile
+	rm -f ${DESTDIR}/etc/backupctl/conf
 
 .PHONY: install uninstall
