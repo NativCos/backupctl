@@ -16,13 +16,13 @@ case $1 in
   ;;
   "create")
     # Backup system
-    BACKUP_NAME=$(hostname)-$(date +"%H:%M:%S-%d-%b-%Y")
+    BACKUP_NAME=$(hostname -s)-$(date +"%H:%M:%S-%d-%b-%Y")
     borg create -v --stats --progress ::${BACKUP_NAME} / --patterns-from /etc/backupctl/excludefile --compression lz4
     exit 0
   ;;
   "prune")
     # Prune extra backups
-    borg prune --prefix $(hostname)- ${@:2}
+    borg prune --prefix $(hostname -s)- ${@:2}
     exit 0
   ;;
   "list")
@@ -37,6 +37,6 @@ case $1 in
     exit 0
   ;;
   *)
-    echo "Unknow command..."
+    echo "Unknown command..."
     exit 1
 esac
