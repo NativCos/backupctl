@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 # Backup to a remote location using Borg.
-# To restore: borg extract username@offsite_server:/path/to/backup_repo::backup_name
 
+
+if [ $USER != "root" ];
+then
+  echo "use sudo!" >&2
+  exit 1
+fi
 
 # Configs
 source /etc/backupctl/conf
@@ -21,19 +26,16 @@ case $1 in
     exit 0
   ;;
   "prune")
-    # Prune extra backups
-    borg prune --prefix $(hostname -s)- ${@:2}
+    # Prune extra backups Keep all backups in the last 7 days and 3 monthly
+    borg prune -v --stats --list --keep-within=7d --keep-monthly=3 --prefix $(hostname -s)- ${@:2}
     exit 0
   ;;
   "list")
     borg list ::
     exit 0
   ;;
-  "extract")
-    borg extract ::$2
-  ;;
   "help")
-    echo "backupctl [ init | create | prune [--keep-daily=3 --keep-weekly=1] | extract <<backup name>> | help ]"
+    echo "backupctl [ init | create | prune [--keep-daily=3 --keep-weekly=1] | help ]"
     exit 0
   ;;
   *)

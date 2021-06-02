@@ -1,0 +1,7 @@
+[Unit]
+Description=Создавать бэкап каждый день в 22:00
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/backupctl create
+ExecStartPost=/usr/bin/backupctl prune
