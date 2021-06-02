@@ -10,6 +10,6 @@ makedepends=('make')
 backup=(etc/backupctl/{conf,excludefile})
 
 package() {
-  cd $srcdir/$pkgname
+  cd "$srcdir/$pkgname"
   make DESTDIR="${pkgdir}" install
 }
