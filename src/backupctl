@@ -2,12 +2,6 @@
 # Backup to a remote location using Borg.
 
 
-if [ "$USER" != "root" ];
-then
-  echo "use sudo!" >&2
-  exit 1
-fi
-
 # Configs
 source /etc/backupctl/conf
 export BORG_RSH="ssh -i ${SSH_PATH_TO_KEY}"
