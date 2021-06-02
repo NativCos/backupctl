@@ -1,6 +1,8 @@
-# Example: SSH_PATH_TO_KEY="/etc/backupctl/id_rsa-desktop-borg-laptop"
+# Example: SSH_PATH_TO_KEY="/etc/backupctl/id_rsa"
 SSH_PATH_TO_KEY=
-# Example: SSH_PATH_TO_REPO="borg-laptop@192.168.1.22:/mnt/hdd-raid/backups/borg-laptop/repo"
+
+# Example: SSH_PATH_TO_REPO="borg-laptop@192.168.1.1:/borg-laptop/repo"
 SSH_PATH_TO_REPO=
-# Example: PASSPHRASE=1234567890wertyuiopasdfghjklzxcvbnm
+
+# Example: PASSPHRASE=123456789qwerty
 PASSPHRASE=

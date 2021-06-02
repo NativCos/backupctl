@@ -21,15 +21,27 @@ case $1 in
   ;;
   "prune")
     # Prune extra backups Keep all backups in the last 7 days and 3 monthly
-    borg prune -v --stats --list --keep-within=7d --keep-monthly=3 --prefix $(hostname -s)- ${@:2}
+    borg prune -v --stats --keep-within=7d --keep-monthly=3 --prefix $(hostname -s)- ${@:2}
     exit 0
   ;;
   "list")
     borg list ::
     exit 0
   ;;
+  "info")
+    borg info ::$2
+    exit 0
+  ;;
   "help")
-    echo "backupctl [ init | create | prune [--keep-daily=3 --keep-weekly=1] | help ]"
+    echo "backupctl [ init | create | prune | list | help ]"
+    exit 0
+  ;;
+  "_export_borg_variables")
+    cat <<EOF
+export BORG_RSH="ssh -i ${SSH_PATH_TO_KEY}"
+export BORG_REPO=${SSH_PATH_TO_REPO}
+export BORG_PASSPHRASE=${PASSPHRASE}
+EOF
     exit 0
   ;;
   *)
