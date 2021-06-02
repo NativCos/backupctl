@@ -17,7 +17,7 @@ case $1 in
   "create")
     # Backup system
     BACKUP_NAME=$(hostname -s)-$(date +"%H:%M:%S-%d-%b-%Y")
-    borg create -v --list --stats --progress ::${BACKUP_NAME} / --exclude-from /etc/backupctl/excludefile --compression lz4
+    borg create -v --stats --progress ::${BACKUP_NAME} / --exclude-from /etc/backupctl/excludefile --compression lz4
     exit 0
   ;;
   "prune")
