@@ -1,11 +1,11 @@
 /dev/*
 /proc/*
 /sys/*
-/media/*
 /mnt/*
 /tmp/*
 /run/*
 /lost+found
+/media/*
 /timeshift/*
 /timeshift-btrfs/*
 /data/*
