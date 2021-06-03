@@ -3,6 +3,7 @@
 
 
 # Configs
+VERSION=8
 source /etc/backupctl/conf
 export BORG_RSH="ssh -i ${SSH_PATH_TO_KEY}"
 export BORG_REPO=${SSH_PATH_TO_REPO}
@@ -32,8 +33,11 @@ case $1 in
     borg info ::$2
     exit 0
   ;;
+  "--version")
+    echo $VERSION
+  ;;
   "help")
-    echo "backupctl [ init | create | prune | list | help ]"
+    echo "backupctl [ init | create | prune | list | --version | help ]"
     exit 0
   ;;
   "_export_borg_variables")
