@@ -36,8 +36,8 @@ case $1 in
   "--version")
     echo $VERSION
   ;;
-  "help")
-    echo "backupctl [ init | create | prune | list | --version | help ]"
+  "--help")
+    echo "backupctl [ init | create | prune | list | info <NAME BACKUP> | --version | --help ]"
     exit 0
   ;;
   "_export_borg_variables")
