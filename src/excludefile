@@ -14,6 +14,7 @@
 /sdcard/*
 /system/*
 /etc/timeshift.json
+/etc/backupctl/*
 /swapfile
 /snap/*
 /root/.thumbnails
