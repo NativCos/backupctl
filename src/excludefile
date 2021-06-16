@@ -47,3 +47,4 @@
 /var/lock/*
 /var/lib/docker/*
 /var/lib/schroot/*
+/var/lib/pacman/db.lck
