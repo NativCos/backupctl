@@ -27,8 +27,6 @@ case $1 in
 
     if [ ! -d "$TO" ]; then echo "target dir dont exist"; exit 1; fi;
     cd ${TO}
-    count=$(ls | wc -l)    
-    if [[ $count != 0 ]]; then echo "target dir not empty"; exit 1; fi;
     
     borg extract --progress ::${BACKUP_NAME}
     exit 0
