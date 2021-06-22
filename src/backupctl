@@ -20,6 +20,19 @@ case $1 in
     borg create -v --stats --progress ::${BACKUP_NAME} / --exclude-from /etc/backupctl/excludefile --compression lz4
     exit 0
   ;;
+  "extract")
+    # Extract system to
+    BACKUP_NAME=$2
+    TO=$3
+
+    if [ ! -d "$TO" ]; then echo "target dir dont exist"; exit 1; fi;
+    cd ${TO}
+    count=$(ls | wc -l)    
+    if [[ $count != 0 ]]; then echo "target dir not empty"; exit 1; fi;
+    
+    borg extract --progress ::${BACKUP_NAME}
+    exit 0
+  ;;
   "prune")
     # Prune extra backups Keep all backups in the last 7 days and 3 monthly
     borg prune -v --stats --keep-within=7d --keep-monthly=3 --prefix $(hostname -s)- ${@:2}
@@ -37,7 +50,7 @@ case $1 in
     echo $VERSION
   ;;
   "--help")
-    echo "backupctl [ init | create | prune | list | info <NAME BACKUP> | --version | --help | _export_borg_variables ]"
+    echo "backupctl [ init | create | prune | list | info <NAME BACKUP> | extract <BACKUP_NAME> <TO>| --version | --help | _export_borg_variables ]"
     exit 0
   ;;
   "_export_borg_variables")
