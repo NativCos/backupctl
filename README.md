@@ -5,8 +5,8 @@
 настроить на сервере файлы:
 - /etc/ssh/sshd_config
     ```
-    ClientAliveInterval 5
-    ClientAliveCountMax 120
+    ClientAliveInterval 10
+    ClientAliveCountMax 30
     ```
 - ~/.ssh/authorized_keys
     ```
