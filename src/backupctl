@@ -3,9 +3,9 @@
 
 
 # Configs
-VERSION=10
+VERSION=11
 source /etc/backupctl/conf
-export BORG_RSH="ssh -i ${SSH_PATH_TO_KEY} -o ServerAliveInterval=10 ServerAliveCountMax=30"
+export BORG_RSH="ssh -i ${SSH_PATH_TO_KEY} -o ServerAliveInterval=10 -o ServerAliveCountMax=30"
 export BORG_REPO=${SSH_PATH_TO_REPO}
 export BORG_PASSPHRASE=${PASSPHRASE}
 
