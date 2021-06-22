@@ -3,7 +3,7 @@
 
 
 # Configs
-VERSION=8
+VERSION=9
 source /etc/backupctl/conf
 export BORG_RSH="ssh -i ${SSH_PATH_TO_KEY} -o ServerAliveInterval=10 ServerAliveCountMax=30"
 export BORG_REPO=${SSH_PATH_TO_REPO}
