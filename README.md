@@ -1,4 +1,18 @@
 # Подсистема бэкапа операционной системы
 
+### install
+#### настроить сервер
+настроить на сервере файлы:
+- /etc/ssh/sshd_config
+    ```
+    ClientAliveInterval 60
+    ClientAliveCountMax 20
+    ```
+- ~/.ssh/authorized_keys
+    ```
+    command="borg serve --restrict-to-path /mnt/backups/borg",restrict,no-pty,no-agent-forwarding,no-port-forwarding <<rsa pub key>>
+
+    ```
+
 ### supports
 - Manjaro
