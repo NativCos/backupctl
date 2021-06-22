@@ -10,7 +10,7 @@
     ```
 - ~/.ssh/authorized_keys
     ```
-    command="borg serve --restrict-to-path /mnt/backups/borg",restrict,no-pty,no-agent-forwarding,no-port-forwarding <<rsa pub key>>
+    command="borg serve --restrict-to-path /mnt/backups/borg 2>>/var/log/borg/desktop.log",restrict,no-pty,no-agent-forwarding,no-port-forwarding <<rsa pub key>> root@desktop
 
     ```
 
