@@ -21,7 +21,7 @@ case $1 in
     exit 0
   ;;
   "extract")
-    # Extract system to
+    # Extract all system to target dir
     BACKUP_NAME=$2
     TO=$3
 
@@ -50,7 +50,7 @@ case $1 in
     echo $VERSION
   ;;
   "--help")
-    echo "backupctl [ init | create | prune | list | info <NAME BACKUP> | extract <BACKUP_NAME> <TO>| --version | --help | _export_borg_variables ]"
+    echo "backupctl [ init | create | prune | list | info <NAME BACKUP> | extract <BACKUP_NAME> <TARGET_DIR>| --version | --help | _export_borg_variables ]"
     exit 0
   ;;
   "_export_borg_variables")
