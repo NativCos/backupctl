@@ -5,7 +5,7 @@
 # Configs
 VERSION=8
 source /etc/backupctl/conf
-export BORG_RSH="ssh -i ${SSH_PATH_TO_KEY}"
+export BORG_RSH="ssh -i ${SSH_PATH_TO_KEY} -o ServerAliveInterval=60"
 export BORG_REPO=${SSH_PATH_TO_REPO}
 export BORG_PASSPHRASE=${PASSPHRASE}
 
@@ -37,14 +37,14 @@ case $1 in
     echo $VERSION
   ;;
   "--help")
-    echo "backupctl [ init | create | prune | list | info <NAME BACKUP> | --version | --help ]"
+    echo "backupctl [ init | create | prune | list | info <NAME BACKUP> | --version | --help | _export_borg_variables ]"
     exit 0
   ;;
   "_export_borg_variables")
     cat <<EOF
-export BORG_RSH="ssh -i ${SSH_PATH_TO_KEY}"
-export BORG_REPO=${SSH_PATH_TO_REPO}
-export BORG_PASSPHRASE=${PASSPHRASE}
+export BORG_RSH="${BORG_RSH}"
+export BORG_REPO=${BORG_REPO}
+export BORG_PASSPHRASE=${BORG_PASSPHRASE}
 EOF
     exit 0
   ;;
