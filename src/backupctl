@@ -3,9 +3,9 @@
 
 
 # Configs
-VERSION=8
+VERSION=12
 source /etc/backupctl/conf
-export BORG_RSH="ssh -i ${SSH_PATH_TO_KEY}"
+export BORG_RSH="ssh -i ${SSH_PATH_TO_KEY} -o ServerAliveInterval=10 -o ServerAliveCountMax=60"
 export BORG_REPO=${SSH_PATH_TO_REPO}
 export BORG_PASSPHRASE=${PASSPHRASE}
 
@@ -18,6 +18,17 @@ case $1 in
     # Backup system
     BACKUP_NAME=$(hostname -s)-$(date +"%H:%M:%S-%d-%b-%Y")
     borg create -v --stats --progress ::${BACKUP_NAME} / --exclude-from /etc/backupctl/excludefile --compression lz4
+    exit 0
+  ;;
+  "extract")
+    # Extract all system to target dir
+    BACKUP_NAME=$2
+    TO=$3
+
+    if [ ! -d "$TO" ]; then echo "target dir dont exist"; exit 1; fi;
+    cd ${TO}
+    
+    borg extract --progress ::${BACKUP_NAME}
     exit 0
   ;;
   "prune")
@@ -36,15 +47,15 @@ case $1 in
   "--version")
     echo $VERSION
   ;;
-  "help")
-    echo "backupctl [ init | create | prune | list | --version | help ]"
+  "--help")
+    echo "backupctl [ init | create | prune | list | info <NAME BACKUP> | extract <BACKUP_NAME> <TARGET_DIR>| --version | --help | _export_borg_variables ]"
     exit 0
   ;;
   "_export_borg_variables")
     cat <<EOF
-export BORG_RSH="ssh -i ${SSH_PATH_TO_KEY}"
-export BORG_REPO=${SSH_PATH_TO_REPO}
-export BORG_PASSPHRASE=${PASSPHRASE}
+export BORG_RSH="${BORG_RSH}"
+export BORG_REPO=${BORG_REPO}
+export BORG_PASSPHRASE=${BORG_PASSPHRASE}
 EOF
     exit 0
   ;;

@@ -2,7 +2,6 @@
 Description=Создавать бэкап каждый день в 22:00
 
 [Timer]
-OnBootSec=5min
 OnCalendar=*-*-* 22:00:00
 AccuracySec=1h
 Persistent=true

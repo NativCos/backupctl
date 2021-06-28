@@ -13,6 +13,8 @@
 /cdrom/*
 /sdcard/*
 /system/*
+/etc/timeshift.json
+/etc/backupctl/*
 /swapfile
 /snap/*
 /etc/timeshift.json
@@ -47,3 +49,4 @@
 /var/lock/*
 /var/lib/docker/*
 /var/lib/schroot/*
+/var/lib/pacman/db.lck
