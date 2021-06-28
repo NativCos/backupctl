@@ -13,9 +13,10 @@
 /cdrom/*
 /sdcard/*
 /system/*
-/etc/timeshift.json
 /swapfile
 /snap/*
+/etc/timeshift.json
+/boot/efi/*
 /root/.thumbnails
 /root/.cache
 /root/.dbus
