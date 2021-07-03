@@ -32,8 +32,8 @@ case $1 in
     exit 0
   ;;
   "prune")
-    # Prune extra backups Keep all backups in the last 7 days and 3 monthly
-    borg prune -v --stats --keep-within=7d --keep-monthly=3 --prefix $(hostname -s)- ${@:2}
+    # Prune extra backups Keep all backups in the last 7 days
+    borg prune -v --stats --keep-within=7d --prefix $(hostname -s)- ${@:2}
     exit 0
   ;;
   "list")
