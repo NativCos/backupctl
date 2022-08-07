@@ -16,7 +16,7 @@ case $1 in
   ;;
   "create")
     # Backup system
-    BACKUP_NAME=$(hostname -s)-$(date +"%H:%M:%S-%d-%b-%Y")
+    BACKUP_NAME=$(hostname -s)_$(date -Iseconds)
     borg create -v --stats --progress ::${BACKUP_NAME} / --exclude-from /etc/backupctl/excludefile --compression lz4
     exit 0
   ;;
@@ -33,7 +33,7 @@ case $1 in
   ;;
   "prune")
     # Prune extra backups Keep all backups in the last 7 days
-    borg prune -v --stats --keep-within=7d --prefix $(hostname -s)- ${@:2}
+    borg prune -v --stats --keep-within=7d --prefix $(hostname -s) ${@:2}
     exit 0
   ;;
   "list")
