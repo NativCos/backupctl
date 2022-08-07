@@ -13,7 +13,6 @@
 /cdrom/*
 /sdcard/*
 /system/*
-/etc/backupctl/*
 /swapfile
 /snap/*
 /etc/timeshift.json
