@@ -7,12 +7,12 @@ import subprocess
 
 
 class Config:
-    CONFIG_FILE_FS_PATH="/etc/backupctl/conf.json"
-    CONFIG_EXCLUDE_FILE="/etc/backupctl/excludefile"
+    CONFIG_FILE_FS_PATH = "/etc/backupctl/conf.json"
+    CONFIG_EXCLUDE_FILE = "/etc/backupctl/excludefile"
 
-    PASSPHRASE=None
-    SSH_PATH_TO_KEY=None
-    SSH_PATH_TO_REPO=None
+    PASSPHRASE = None
+    SSH_PATH_TO_KEY = None
+    SSH_PATH_TO_REPO = None
 
     def __new__(cls):
         if not hasattr(cls, 'instance'):
@@ -24,18 +24,18 @@ class Config:
             raise ValueError(f"Config file {fs_path_to_config} not exists")
         with open(fs_path_to_config, 'tr') as fp:
             json_config = json.load(fp)
-        if hasattr(json_config, 'passphrase'):
+        if 'passphrase' in json_config:
             self.PASSPHRASE = json_config['passphrase']
-        if hasattr(json_config, 'ssh_path_to_key'):
+        if 'ssh_path_to_key' in json_config:
             self.SSH_PATH_TO_KEY = json_config['ssh_path_to_key']
-        if hasattr(json_config, 'ssh_path_to_repo'):
+        if 'ssh_path_to_repo' in json_config:
             self.SSH_PATH_TO_REPO = json_config['ssh_path_to_repo']
-    
+
     def make_borg_variables(self):
-        return f"BORG_RSH=\"ssh -i {SSH_PATH_TO_KEY} -o ServerAliveInterval=10 -o ServerAliveCountMax=60\"" +\
-            f" BORG_REPO={SSH_PATH_TO_REPO}" +\
-            f" BORG_PASSPHRASE={PASSPHRASE}"
-    
+        return f"BORG_RSH=\"ssh -i {self.SSH_PATH_TO_KEY} -o ServerAliveInterval=10 -o ServerAliveCountMax=60\"" + \
+               f" BORG_REPO={self.SSH_PATH_TO_REPO}" + \
+               f" BORG_PASSPHRASE={self.PASSPHRASE}"
+
     def check_correctness_config(self):
         if self.PASSPHRASE is None or not isinstance(self.PASSPHRASE, str) or len(self.PASSPHRASE) == 0:
             raise Exception("Config PASSPHRASE is invalid")
@@ -50,37 +50,42 @@ class Config:
 def init():
     """Borg init repo"""
     subprocess.run(
-        Config().make_borg_variables(),
-        "borg init --encryption=repokey ::", 
+        Config().make_borg_variables() + \
+        ' borg init --encryption=repokey ::',
         shell=True, stderr=sys.stderr, stdout=sys.stdout)
+
 
 def backup():
     """Make snapshot"""
     subprocess.run(
-        Config().make_borg_variables(), 
-        f"borg create -v --stats --progress ::$(hostname -s)_$(date -Iseconds) / --exclude-from {Config().CONFIG_EXCLUDE_FILE} --compression lz4", 
+        Config().make_borg_variables() + \
+        f" borg create -v --stats --progress ::$(hostname -s)_$(date -Iseconds) / --exclude-from {Config().CONFIG_EXCLUDE_FILE} --compression lz4",
         shell=True, stderr=sys.stderr, stdout=sys.stdout)
+
 
 def show_list():
     """Print backups names"""
     subprocess.run(
-        Config().make_borg_variables(),
-        "borg list ::", 
+        Config().make_borg_variables() + \
+        " borg list ::",
         shell=True, stderr=sys.stderr, stdout=sys.stdout)
+
 
 def show_info(backupname: str):
     """Print borg info by backup name"""
     subprocess.run(
-        Config().make_borg_variables(), 
-        f"borg info ::{backupname}", 
+        Config().make_borg_variables() + \
+        f" borg info ::{backupname}",
         shell=True, stderr=sys.stderr, stdout=sys.stdout)
+
 
 def prune():
     """Borg delete special useless snapshots"""
     subprocess.run(
-        Config().make_borg_variables(), 
-        "borg prune -v --stats --keep-within=7d --prefix $(hostname -s) ${@:2}", 
+        Config().make_borg_variables() + \
+        " borg prune -v --stats --keep-within=7d --prefix $(hostname -s) ${@:2}",
         shell=True, stderr=sys.stderr, stdout=sys.stdout)
+
 
 def mount_fuse_all_backups(mountpoint: str):
     """FUSE readonly mount all bakup images"""
@@ -89,17 +94,18 @@ def mount_fuse_all_backups(mountpoint: str):
     if not os.path.isdir(mountpoint):
         raise Exceptoin('mountpoint is not dir')
     subprocess.run(
-        Config().make_borg_variables(), 
-        f"borg mount :: {mountpoint}", 
+        Config().make_borg_variables() + \
+        f" borg mount :: {mountpoint}",
         shell=True, stderr=sys.stderr, stdout=sys.stdout)
+
 
 def export_borg_variables():
     """export vars for work with borg program"""
-    return  f"export {Config().make_borg_variables()}"
+    return f"export {Config().make_borg_variables()}"
 
 
 parser = argparse.ArgumentParser(prog='backupctl', description='Backup to a remote location using Borg.')
-parser.add_argument('--config', nargs='?',type=str, help='json config file path')
+parser.add_argument('--config', nargs='?', type=str, help='json config file path')
 parser.add_argument('--export_borg_variables', action='store_true', help='export vars for work with borg program')
 
 subparsers = parser.add_subparsers(title='commands', dest='subcommand')
@@ -120,7 +126,7 @@ else:
     pass
     Config().read_from_file(Config().CONFIG_FILE_FS_PATH)
 Config().check_correctness_config()
-if args.export_borg_variables == True:
+if args.export_borg_variables:
     print(export_borg_variables())
 
 match args.subcommand:
@@ -131,12 +137,10 @@ match args.subcommand:
     case 'list':
         show_list()
     case 'info':
-        show_info(BACKUPNAME)
+        show_info(args.BACKUPNAME)
     case 'prune':
         prune()
     case 'mount':
         if not isinstance(args.MOUNTPOINT, str):
             raise RuntimeError('args.MOUNTPOINT is not string type')
         mount_fuse_all_backups(args.MOUNTPOINT)
-
-
