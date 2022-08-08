@@ -1,0 +1,129 @@
+#/usr/bin/env python3.10
+import argparse
+import json
+import os
+import sys
+import subprocess
+
+
+class Config:
+    CONFIG_FILE_FS_PATH="/etc/backupctl/conf.json"
+    CONFIG_EXCLUDE_FILE="/etc/backupctl/excludefile"
+
+    PASSPHRASE=None
+    SSH_PATH_TO_KEY=None
+    SSH_PATH_TO_REPO=None
+
+    def __new__(cls):
+        if not hasattr(cls, 'instance'):
+            cls.instance = super(Config, cls).__new__(cls)
+        return cls.instance
+
+    def read_from_file(self, fs_path_to_config: str):
+        if not os.path.exists(fs_path_to_config):
+            raise ValueError(f"Config file {fs_path_to_config} not exists")
+        with open(fs_path_to_config, 'tr') as fp:
+            json_config = json.load(fp)
+        try:
+            self.PASSPHRASE = json_config['passphrase']
+            self.SSH_PATH_TO_KEY = json_config['ssh_path_to_key']
+            self.SSH_PATH_TO_REPO = json_config['ssh_path_to_repo']
+        except KeyError:
+            pass
+    
+    def make_borg_variables(self):
+        return f"BORG_RSH=\"ssh -i {SSH_PATH_TO_KEY} -o ServerAliveInterval=10 -o ServerAliveCountMax=60\"" +\
+            f" BORG_REPO={SSH_PATH_TO_REPO}" +\
+            f" BORG_PASSPHRASE={PASSPHRASE}"
+    
+    def check_correctness_config(self):
+        if self.PASSPHRASE is None or not isinstance(self.PASSPHRASE, str) or len(self.PASSPHRASE) == 0:
+            raise Exception("Config PASSPHRASE is invalid")
+        if self.SSH_PATH_TO_KEY is None or not isinstance(self.SSH_PATH_TO_KEY, str):
+            raise Exception("Config SSH_PATH_TO_KEY is invalid")
+        if self.SSH_PATH_TO_REPO is None or not isinstance(self.SSH_PATH_TO_REPO, str):
+            raise Exception("Config SSH_PATH_TO_REPO is invalid")
+
+
+def init():
+    """Borg init repo"""
+    subprocess.run(
+        Config().make_borg_variables(), "borg init --encryption=repokey ::", 
+        shell=True, stderr=sys.stderr, stdout=sys.stdout)
+
+def backup():
+    """Make snapshot"""
+    subprocess.run(
+        Config().make_borg_variables(), 
+        f"borg create -v --stats --progress ::$(hostname -s)_$(date -Iseconds) / --exclude-from {Config().CONFIG_EXCLUDE_FILE} --compression lz4", 
+        shell=True, stderr=sys.stderr, stdout=sys.stdout)
+
+def show_list():
+    """Print backups names"""
+    subprocess.run(
+        Config().make_borg_variables(),
+        "borg list ::", 
+        shell=True, stderr=sys.stderr, stdout=sys.stdout)
+
+def show_info(backupname: str):
+    """Print borg info by backup name"""
+    subprocess.run(
+        Config().make_borg_variables(), 
+        f"borg info ::{backupname}", 
+        shell=True, stderr=sys.stderr, stdout=sys.stdout)
+
+def prune():
+    """Borg delete special useless snapshots"""
+    subprocess.run(
+        Config().make_borg_variables(), 
+        "borg prune -v --stats --keep-within=7d --prefix $(hostname -s) ${@:2}", 
+        shell=True, stderr=sys.stderr, stdout=sys.stdout)
+
+def mount_fuse_all_backups():
+    """FUSE readonly mount all bakup images"""
+    raise NotImplementedError()
+    # TODO: mount_fuse_all_backups NotImplemented
+
+def export_borg_variables():
+    """export vars for work with borg program"""
+    return  f"export {Config().make_borg_variables()}"
+
+
+parser = argparse.ArgumentParser(prog='backupctl', description='Backup to a remote location using Borg.')
+parser.add_argument('--config', nargs='?',type=str, help='json config file path')
+parser.add_argument('--export_borg_variables', action='store_true', help='export vars for work with borg program')
+
+subparsers = parser.add_subparsers(title='commands', dest='subcommand')
+parser_init = subparsers.add_parser('init', help='create a repository')
+parser_backup = subparsers.add_parser('backup', help='make a backup of system')
+parser_list = subparsers.add_parser('list', help='show backups names list')
+parser_info = subparsers.add_parser('info', help='show backup info by name')
+parser_info.add_argument('BACKUPNAME', type=str)
+parser_prune = subparsers.add_parser('prune', help='delete useless backups')
+parser_mount = subparsers.add_parser('mount', help='FUSE readonly mount all bakup images')
+
+args = parser.parse_args()
+
+if args.config is not None:
+    Config().read_from_file(args.config)
+else:
+    Config().read_from_file(Config().CONFIG_FILE_FS_PATH)
+Config().check_correctness_config()
+if args.export_borg_variables == True:
+    print(export_borg_variables())
+
+match args.subcommand:
+    case 'init':
+        init()
+    case 'backup':
+        backup()
+    case 'list':
+        show_list()
+    case 'info':
+        show_info(BACKUPNAME)
+    case 'prune':
+        prune()
+    case 'mount':
+        mount_fuse_all_backups()
+
+

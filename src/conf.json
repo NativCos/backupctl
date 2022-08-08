@@ -1,0 +1,5 @@
+{
+    passphrase: "123456789qwerty",
+    ssh_path_to_key: "/etc/backupctl/id_rsa",
+    ssh_path_to_repo:"borg@desktop.nkt.lan:laptop",
+}
