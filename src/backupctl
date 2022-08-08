@@ -24,12 +24,12 @@ class Config:
             raise ValueError(f"Config file {fs_path_to_config} not exists")
         with open(fs_path_to_config, 'tr') as fp:
             json_config = json.load(fp)
-        try:
+        if hasattr(json_config, 'passphrase'):
             self.PASSPHRASE = json_config['passphrase']
+        if hasattr(json_config, 'ssh_path_to_key'):
             self.SSH_PATH_TO_KEY = json_config['ssh_path_to_key']
+        if hasattr(json_config, 'ssh_path_to_repo'):
             self.SSH_PATH_TO_REPO = json_config['ssh_path_to_repo']
-        except KeyError:
-            pass
     
     def make_borg_variables(self):
         return f"BORG_RSH=\"ssh -i {SSH_PATH_TO_KEY} -o ServerAliveInterval=10 -o ServerAliveCountMax=60\"" +\
@@ -82,10 +82,16 @@ def prune():
         "borg prune -v --stats --keep-within=7d --prefix $(hostname -s) ${@:2}", 
         shell=True, stderr=sys.stderr, stdout=sys.stdout)
 
-def mount_fuse_all_backups():
+def mount_fuse_all_backups(mountpoint: str):
     """FUSE readonly mount all bakup images"""
-    raise NotImplementedError()
-    # TODO: mount_fuse_all_backups NotImplemented
+    if not os.path.exists(mountpoint):
+        raise Exception('mountpoint not exist')
+    if not os.path.isdir(mountpoint):
+        raise Exceptoin('mountpoint is not dir')
+    subprocess.run(
+        Config().make_borg_variables(), 
+        f"borg mount :: {mountpoint}", 
+        shell=True, stderr=sys.stderr, stdout=sys.stdout)
 
 def export_borg_variables():
     """export vars for work with borg program"""
@@ -104,6 +110,7 @@ parser_info = subparsers.add_parser('info', help='show backup info by name')
 parser_info.add_argument('BACKUPNAME', type=str)
 parser_prune = subparsers.add_parser('prune', help='delete useless backups')
 parser_mount = subparsers.add_parser('mount', help='FUSE readonly mount all bakup images')
+parser_mount.add_argument('MOUNTPOINT', type=str, help='where readonly mounting all backups')
 
 args = parser.parse_args()
 
@@ -128,6 +135,8 @@ match args.subcommand:
     case 'prune':
         prune()
     case 'mount':
-        mount_fuse_all_backups()
+        if not isinstance(args.MOUNTPOINT, str):
+            raise RuntimeError('args.MOUNTPOINT is not string type')
+        mount_fuse_all_backups(args.MOUNTPOINT)
 
 
