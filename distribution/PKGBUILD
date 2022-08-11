@@ -7,7 +7,7 @@ source=('git+ssh://git@git.nkt.lan:222/nikita/backupctl.git#tag=v14')
 sha256sums=('SKIP')
 depends=('borg' 'openssh')
 makedepends=('make')
-backup=(etc/backupctl/{conf.json,excludefile})
+backup=(usr/local/etc/backupctl/{conf.json,excludefile})
 
 package() {
   cd "$srcdir/$pkgname"

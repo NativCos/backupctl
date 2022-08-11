@@ -7,16 +7,16 @@ DESTDIR=''
 install:
 	mkdir -p "${DESTDIR}/usr/bin/"
 	
-	cp ./src/backupctl "${DESTDIR}/usr/bin/backupctl"
-	chmod u=rx,g=rx,o=rx "${DESTDIR}/usr/bin/backupctl"
+	cp ./src/backupctl "${DESTDIR}/usr/local/bin/backupctl"
+	chmod u=rx,g=rx,o=rx "${DESTDIR}/usr/local/bin/backupctl"
 
-	mkdir -p "${DESTDIR}/etc/backupctl/"
+	mkdir -p "${DESTDIR}/usr/local/etc/backupctl/"
 
-	cp ./src/excludefile "${DESTDIR}/etc/backupctl/excludefile"
-	chmod u=rw,g=rw,o=r "${DESTDIR}/etc/backupctl/excludefile"
+	cp ./src/excludefile "${DESTDIR}/usr/local/etc/backupctl/excludefile"
+	chmod u=rw,g=rw,o=r "${DESTDIR}/usr/local/etc/backupctl/excludefile"
 
-	cp ./src/conf.json "${DESTDIR}/etc/backupctl/conf.json"
-	chmod u=rw,g=,o= "${DESTDIR}/etc/backupctl/conf.json"
+	cp ./src/conf.json "${DESTDIR}/usr/local/etc/backupctl/conf.json"
+	chmod u=rw,g=,o= "${DESTDIR}/usr/local/etc/backupctl/conf.json"
 
 	mkdir -p "${DESTDIR}/usr/lib/systemd/system"
 
@@ -26,9 +26,8 @@ install:
 	chmod u=rw,g=r,o= "${DESTDIR}/usr/lib/systemd/system/backupctl-create-everyday.service"
 
 uninstall:
-	rm -f "${DESTDIR}/usr/bin/backupctl"
-	rm -f "${DESTDIR}/etc/backupctl/excludefile"
-	rm -f "${DESTDIR}/etc/backupctl/"
+	rm -f "${DESTDIR}/usr/local/bin/backupctl"
+	rm -rf "${DESTDIR}/usr/local/etc/backupctl/"
 	rm -f "${DESTDIR}/usr/lib/systemd/system/backupctl-create-everyday.service"
 	rm -f "${DESTDIR}/usr/lib/systemd/system/backupctl-create-everyday.timer"
 
