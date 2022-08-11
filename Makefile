@@ -5,7 +5,7 @@ DESTDIR=''
 
 
 install:
-	mkdir -p "${DESTDIR}/usr/bin/"
+	mkdir -p "${DESTDIR}/usr/local/bin"
 	
 	cp ./src/backupctl "${DESTDIR}/usr/local/bin/backupctl"
 	chmod u=rx,g=rx,o=rx "${DESTDIR}/usr/local/bin/backupctl"

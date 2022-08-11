@@ -7,8 +7,8 @@ import subprocess
 
 
 class Config:
-    CONFIG_FILE_FS_PATH = "/etc/backupctl/conf.json"
-    CONFIG_EXCLUDE_FILE = "/etc/backupctl/excludefile"
+    CONFIG_FILE_FS_PATH = "/usr/local/etc/backupctl/conf.json"
+    CONFIG_EXCLUDE_FILE = "/usr/local/etc/backupctl/excludefile"
 
     PASSPHRASE = None
     SSH_PATH_TO_KEY = None
