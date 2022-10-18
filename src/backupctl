@@ -83,7 +83,7 @@ def prune():
     """Borg delete special useless snapshots"""
     subprocess.run(
         Config().make_borg_variables() + \
-        " borg prune -v --stats --keep-within=7d --prefix $(hostname -s) ${@:2}",
+        " borg prune -v --stats --keep-within=7d --keep-last=3 --glob-archives=\"$(hostname -s)*\" ${@:2}",
         shell=True, stderr=sys.stderr, stdout=sys.stdout)
 
 
