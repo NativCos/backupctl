@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.10
+#!/usr/bin/env python3
 import argparse
 import json
 import os
@@ -7,29 +7,28 @@ import subprocess
 
 
 class Config:
-    CONFIG_FILE_FS_PATH = "/usr/local/etc/backupctl/conf.json"
-    CONFIG_EXCLUDE_FILE = "/usr/local/etc/backupctl/excludefile"
+    DEFAULT_CONFIG_FILE_FS_PATH = "/usr/local/etc/backupctl/conf.json"
+    DEFAULT_CONFIG_EXCLUDE_FILE = "/usr/local/etc/backupctl/excludefile"
 
     PASSPHRASE = None
     SSH_PATH_TO_KEY = None
     SSH_PATH_TO_REPO = None
 
-    def __new__(cls):
-        if not hasattr(cls, 'instance'):
-            cls.instance = super(Config, cls).__new__(cls)
-        return cls.instance
-
-    def read_from_file(self, fs_path_to_config: str):
+    @staticmethod
+    def read_from_file(fs_path_to_config: str):
+        config = Config()
         if not os.path.exists(fs_path_to_config):
             raise ValueError(f"Config file {fs_path_to_config} not exists")
         with open(fs_path_to_config, 'tr') as fp:
             json_config = json.load(fp)
         if 'passphrase' in json_config:
-            self.PASSPHRASE = json_config['passphrase']
+            config.PASSPHRASE = json_config['passphrase']
         if 'ssh_path_to_key' in json_config:
-            self.SSH_PATH_TO_KEY = json_config['ssh_path_to_key']
+            config.SSH_PATH_TO_KEY = json_config['ssh_path_to_key']
         if 'ssh_path_to_repo' in json_config:
-            self.SSH_PATH_TO_REPO = json_config['ssh_path_to_repo']
+            config.SSH_PATH_TO_REPO = json_config['ssh_path_to_repo']
+        config.check_correctness_config()
+        return config
 
     def make_borg_variables(self):
         return f"BORG_RSH=\"ssh -i {self.SSH_PATH_TO_KEY} -o ServerAliveInterval=10 -o ServerAliveCountMax=60\"" + \
@@ -43,77 +42,78 @@ class Config:
             raise Exception("Config SSH_PATH_TO_KEY is invalid")
         if self.SSH_PATH_TO_REPO is None or not isinstance(self.SSH_PATH_TO_REPO, str):
             raise Exception("Config SSH_PATH_TO_REPO is invalid")
-        if not os.path.exists(self.CONFIG_EXCLUDE_FILE):
+        if not os.path.exists(self.DEFAULT_CONFIG_EXCLUDE_FILE):
             raise Exception('CONFIG_EXCLUDE_FILE not exist')
 
 
-def init():
-    """Borg init repo"""
-    subprocess.run(
-        Config().make_borg_variables() + \
-        ' borg init --encryption=repokey ::',
-        shell=True, stderr=sys.stderr, stdout=sys.stdout)
+class BackupCTL:
+    config = None
 
+    def __init__(self, config):
+        self.config = config
 
-def backup():
-    """Make snapshot"""
-    subprocess.run(
-        Config().make_borg_variables() + \
-        f" borg create -v --stats --progress ::$(hostname -s)_$(date -Iseconds) / --exclude-from {Config().CONFIG_EXCLUDE_FILE} --compression lz4",
-        shell=True, stderr=sys.stderr, stdout=sys.stdout)
+    def init(self):
+        """Borg init repo"""
+        subprocess.run(
+            self.config.make_borg_variables() + \
+            ' borg init --encryption=repokey ::',
+            shell=True, stderr=sys.stderr, stdout=sys.stdout)
 
+    def backup(self, path_of_archiving='/'):
+        """Make snapshot"""
+        if not os.path.exists(path_of_archiving):
+            raise RuntimeError("path of archiving not exist")
+        os.chdir(path_of_archiving)
+        subprocess.run(
+            self.config.make_borg_variables() + \
+            f" borg create -v --stats --progress --exclude-from {self.config.DEFAULT_CONFIG_EXCLUDE_FILE} --compression lz4 ::$(hostname -s)_$(date -Iseconds) .",
+            shell=True, stderr=sys.stderr, stdout=sys.stdout)
 
-def show_list():
-    """Print backups names"""
-    subprocess.run(
-        Config().make_borg_variables() + \
-        " borg list ::",
-        shell=True, stderr=sys.stderr, stdout=sys.stdout)
+    def show_list(self):
+        """Print backups names"""
+        subprocess.run(
+            self.config.make_borg_variables() + \
+            " borg list ::",
+            shell=True, stderr=sys.stderr, stdout=sys.stdout)
 
+    def show_info(self, backupname: str):
+        """Print borg info by backup name"""
+        subprocess.run(
+            self.config.make_borg_variables() + \
+            f" borg info ::{backupname}",
+            shell=True, stderr=sys.stderr, stdout=sys.stdout)
 
-def show_info(backupname: str):
-    """Print borg info by backup name"""
-    subprocess.run(
-        Config().make_borg_variables() + \
-        f" borg info ::{backupname}",
-        shell=True, stderr=sys.stderr, stdout=sys.stdout)
+    def prune(self):
+        """Borg delete special useless snapshots"""
+        subprocess.run(
+            self.config.make_borg_variables() + \
+            " borg prune -v --stats --keep-within=7d --keep-last=3 --glob-archives=\"$(hostname -s)*\" ${@:2}",
+            shell=True, stderr=sys.stderr, stdout=sys.stdout)
 
+    def mount_fuse_all_backups(self, mountpoint: str):
+        """FUSE readonly mount all backup images !VIEW ONLY!"""
+        if not os.path.exists(mountpoint):
+            raise Exception('mountpoint not exist')
+        if not os.path.isdir(mountpoint):
+            raise Exception('mountpoint is not dir')
+        subprocess.run(
+            f"{self.config.make_borg_variables()} borg mount :: {mountpoint}",
+            shell=True, stderr=sys.stderr, stdout=sys.stdout)
 
-def prune():
-    """Borg delete special useless snapshots"""
-    subprocess.run(
-        Config().make_borg_variables() + \
-        " borg prune -v --stats --keep-within=7d --keep-last=3 --glob-archives=\"$(hostname -s)*\" ${@:2}",
-        shell=True, stderr=sys.stderr, stdout=sys.stdout)
+    def extract(self, backupname: str):
+        """Extract archive by name to CURRENT DIRECTORY
 
+        Currently, extract always writes into the current working directory (“.”),
+        so make sure you cd to the right place before calling borg extract.
+        """
+        subprocess.run(
+            self.config.make_borg_variables() + \
+            f" borg extract --list ::{backupname}",
+            shell=True, stderr=sys.stderr, stdout=sys.stdout)
 
-def mount_fuse_all_backups(mountpoint: str):
-    """FUSE readonly mount all backup images !VIEW ONLY!"""
-    if not os.path.exists(mountpoint):
-        raise Exception('mountpoint not exist')
-    if not os.path.isdir(mountpoint):
-        raise Exception('mountpoint is not dir')
-    subprocess.run(
-        Config().make_borg_variables() + \
-        f" borg mount :: {mountpoint}",
-        shell=True, stderr=sys.stderr, stdout=sys.stdout)
-
-
-def extract(backupname: str):
-    """Extract archive by name to CURRENT DIRECTORY
-
-    Currently, extract always writes into the current working directory (“.”),
-    so make sure you cd to the right place before calling borg extract.
-    """
-    subprocess.run(
-        Config().make_borg_variables() + \
-        f" borg extract --list ::{backupname}",
-        shell=True, stderr=sys.stderr, stdout=sys.stdout)
-
-
-def export_borg_variables():
-    """export vars for work with borg program"""
-    return f"export {Config().make_borg_variables()}"
+    def export_borg_variables(self):
+        """export vars for work with borg program"""
+        return f"export {self.config.make_borg_variables()}"
 
 
 parser = argparse.ArgumentParser(prog='backupctl', description='Backup to a remote location using Borg.')
@@ -123,6 +123,7 @@ parser.add_argument('--export_borg_variables', action='store_true', help='export
 subparsers = parser.add_subparsers(title='commands', dest='subcommand')
 parser_init = subparsers.add_parser('init', help='create a repository')
 parser_backup = subparsers.add_parser('backup', help='make a backup of system')
+parser_backup.add_argument('BTRFS_SNAPSHOT', type=str, help='for btrfs snapshots. alternative os root path.')
 parser_list = subparsers.add_parser('list', help='show backups names list')
 parser_info = subparsers.add_parser('info', help='show backup info by name')
 parser_info.add_argument('BACKUPNAME', type=str)
@@ -135,28 +136,33 @@ parser_mount.add_argument('BACKUPNAME', type=str)
 args = parser.parse_args()
 
 if args.config is not None:
-    Config().read_from_file(args.config)
+    config = Config.read_from_file(args.config)
 else:
-    pass
-    Config().read_from_file(Config().CONFIG_FILE_FS_PATH)
-Config().check_correctness_config()
+    config = Config.read_from_file(Config.DEFAULT_CONFIG_FILE_FS_PATH)
+backupctl = BackupCTL(config)
+
 if args.export_borg_variables:
-    print(export_borg_variables())
+    print(backupctl.export_borg_variables())
 
 match args.subcommand:
     case 'init':
-        init()
+        backupctl.init()
     case 'backup':
-        backup()
+        if args.BTRFS_SNAPSHOT is not None:
+            if not isinstance(args.BTRFS_SNAPSHOT, str):
+                raise RuntimeError('args.BTRFS_SNAPSHOT is not string type')
+            backupctl.backup(args.BTRFS_SNAPSHOT)
+        else:
+            backupctl.backup()
     case 'list':
-        show_list()
+        backupctl.show_list()
     case 'info':
-        show_info(args.BACKUPNAME)
+        backupctl.show_info(args.BACKUPNAME)
     case 'prune':
-        prune()
+        backupctl.prune()
     case 'mount':
         if not isinstance(args.MOUNTPOINT, str):
             raise RuntimeError('args.MOUNTPOINT is not string type')
-        mount_fuse_all_backups(args.MOUNTPOINT)
+        backupctl.mount_fuse_all_backups(args.MOUNTPOINT)
     case 'extract':
-        extract(args.BACKUPNAME)
+        backupctl.extract(args.BACKUPNAME)
