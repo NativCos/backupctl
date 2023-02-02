@@ -76,8 +76,10 @@ class BackupCTL:
             " borg list ::",
             shell=True, stderr=sys.stderr, stdout=sys.stdout)
 
-    def show_info(self, backupname: str):
+    def show_info(self, backupname):
         """Print borg info by backup name"""
+        if backupname is None:
+            backupname = ""
         subprocess.run(
             self.config.make_borg_variables() + \
             f" borg info ::{backupname}",
@@ -100,15 +102,17 @@ class BackupCTL:
             f"{self.config.make_borg_variables()} borg mount :: {mountpoint}",
             shell=True, stderr=sys.stderr, stdout=sys.stdout)
 
-    def extract(self, backupname: str):
+    def extract(self, backupname: str, path):
         """Extract archive by name to CURRENT DIRECTORY
 
         Currently, extract always writes into the current working directory (“.”),
         so make sure you cd to the right place before calling borg extract.
         """
+        if path is None:
+            path = ""
         subprocess.run(
             self.config.make_borg_variables() + \
-            f" borg extract --list ::{backupname}",
+            f" borg extract --list ::{backupname} {path}",
             shell=True, stderr=sys.stderr, stdout=sys.stdout)
 
     def export_borg_variables(self):
@@ -123,15 +127,16 @@ parser.add_argument('--export_borg_variables', action='store_true', help='export
 subparsers = parser.add_subparsers(title='commands', dest='subcommand')
 parser_init = subparsers.add_parser('init', help='create a repository')
 parser_backup = subparsers.add_parser('backup', help='make a backup of system')
-parser_backup.add_argument('BTRFS_SNAPSHOT', type=str, help='for btrfs snapshots. alternative os root path.')
+parser_backup.add_argument('BTRFS_SNAPSHOT', required=False, type=str, help='for btrfs snapshots. alternative os root path.')
 parser_list = subparsers.add_parser('list', help='show backups names list')
 parser_info = subparsers.add_parser('info', help='show backup info by name')
-parser_info.add_argument('BACKUPNAME', type=str)
+parser_info.add_argument('BACKUPNAME', required=False, type=str)
 parser_prune = subparsers.add_parser('prune', help='delete useless backups')
 parser_mount = subparsers.add_parser('mount', help='FUSE readonly mount all backup images !VIEW ONLY!')
-parser_mount.add_argument('MOUNTPOINT', type=str, help='where readonly mounting all backups')
+parser_mount.add_argument('MOUNTPOINT', required=True, type=str, help='where readonly mounting all backups')
 parser_extract = subparsers.add_parser('extract', help='Extract archive by name to CURRENT DIRECTORY. so make sure you cd to the right')
-parser_mount.add_argument('BACKUPNAME', type=str)
+parser_extract.add_argument('BACKUPNAME', required=True, type=str)
+parser_extract.add_argument('PATH', required=False, type=str, help='paths to extract (What only to extract from backup); patterns are supported')
 
 args = parser.parse_args()
 
@@ -149,20 +154,28 @@ match args.subcommand:
         backupctl.init()
     case 'backup':
         if args.BTRFS_SNAPSHOT is not None:
-            if not isinstance(args.BTRFS_SNAPSHOT, str):
-                raise RuntimeError('args.BTRFS_SNAPSHOT is not string type')
             backupctl.backup(args.BTRFS_SNAPSHOT)
         else:
             backupctl.backup()
     case 'list':
         backupctl.show_list()
     case 'info':
-        backupctl.show_info(args.BACKUPNAME)
+        if args.BACKUPNAME is not None:
+            backupctl.show_info(args.BACKUPNAME)
+        else:
+            backupctl.show_info(None)
     case 'prune':
         backupctl.prune()
     case 'mount':
-        if not isinstance(args.MOUNTPOINT, str):
-            raise RuntimeError('args.MOUNTPOINT is not string type')
         backupctl.mount_fuse_all_backups(args.MOUNTPOINT)
     case 'extract':
-        backupctl.extract(args.BACKUPNAME)
+        print("Extract archive by name to CURRENT DIRECTORY. so make sure you cd to the right.")
+        answer = input("Continue? [N/y]")
+        if answer in ('y', 'Y', 'Yes'):
+            if args.PATH is not None:
+                backupctl.extract(args.BACKUPNAME, args.PATH)
+            else:
+                backupctl.extract(args.BACKUPNAME, None)
+        else:
+            print("interrupt.")
+            exit()
