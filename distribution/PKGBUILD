@@ -1,9 +1,9 @@
 pkgname=backupctl
-pkgver=16
+pkgver=17
 pkgrel=1
 pkgdesc="Backup to a remote location using Borg."
 arch=("x86_64")
-source=('git+ssh://git@git.nkt.lan:222/nikita/backupctl.git#tag=v16')
+source=('git+ssh://git@git.nkt.lan:222/nikita/backupctl.git#tag=v17')
 sha256sums=('SKIP')
 depends=('borg' 'openssh')
 makedepends=('make')
