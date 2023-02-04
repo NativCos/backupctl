@@ -123,7 +123,7 @@ class BackupCTL:
 
     def export_borg_variables(self):
         """export vars for work with borg program"""
-        return f"export {self.config.make_borg_variables()}"
+        return f"{self.config.make_borg_variables()}"
 
 
 parser = argparse.ArgumentParser(prog='backupctl', description='Backup to a remote location using Borg.')
