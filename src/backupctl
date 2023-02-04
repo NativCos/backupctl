@@ -4,6 +4,12 @@ import json
 import os
 import sys
 import subprocess
+import logging
+
+
+_logger = logging.getLogger(__name__)
+_logger.setLevel(logging.DEBUG)
+_logger.addHandler(logging.StreamHandler(sys.stderr))
 
 
 class Config:
@@ -127,16 +133,17 @@ parser.add_argument('--export_borg_variables', action='store_true', help='export
 subparsers = parser.add_subparsers(title='commands', dest='subcommand')
 parser_init = subparsers.add_parser('init', help='create a repository')
 parser_backup = subparsers.add_parser('backup', help='make a backup of system')
-parser_backup.add_argument('BTRFS_SNAPSHOT', default=argparse.SUPPRESS, type=str, help='for btrfs snapshots. alternative os root path.')
+parser_backup.add_argument('BTRFS_SNAPSHOT', nargs='?', help='for btrfs snapshots. alternative os root path.')
 parser_list = subparsers.add_parser('list', help='show backups names list')
 parser_info = subparsers.add_parser('info', help='show backup info by name')
-parser_info.add_argument('BACKUPNAME', default=argparse.SUPPRESS, type=str)
+parser_info.add_argument('BACKUPNAME', nargs='?')
 parser_prune = subparsers.add_parser('prune', help='delete useless backups')
 parser_mount = subparsers.add_parser('mount', help='FUSE readonly mount all backup images !VIEW ONLY!')
-parser_mount.add_argument('MOUNTPOINT', type=str, help='where readonly mounting all backups')
+parser_mount.add_argument('MOUNTPOINT', help='where readonly mounting all backups')
 parser_extract = subparsers.add_parser('extract', help='Extract archive by name to CURRENT DIRECTORY. so make sure you cd to the right')
-parser_extract.add_argument('BACKUPNAME', type=str)
-parser_extract.add_argument('PATH', default=argparse.SUPPRESS, type=str, help='paths to extract (What only to extract from backup); patterns are supported')
+parser_extract.add_argument('BACKUPNAME')
+parser_extract.add_argument('PATH', nargs='?', help='paths to extract (What only to extract from backup); patterns are supported')
+
 
 args = parser.parse_args()
 
