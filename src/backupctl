@@ -97,6 +97,10 @@ class BackupCTL:
             self.config.make_borg_variables() + \
             " borg prune -v --stats --keep-within=7d --keep-last=3 --glob-archives=\"$(hostname -s)*\" ${@:2}",
             shell=True, stderr=sys.stderr, stdout=sys.stdout)
+        subprocess.run(
+            self.config.make_borg_variables() + \
+            " borg compact",
+            shell=True, stderr=sys.stderr, stdout=sys.stdout)
 
     def mount_fuse_all_backups(self, mountpoint: str):
         """FUSE readonly mount all backup images !VIEW ONLY!"""
