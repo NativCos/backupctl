@@ -173,64 +173,65 @@ class BackupCTL:
         return f"{self.config.make_borg_variables()}"
 
 
-parser = argparse.ArgumentParser(prog='backupctl', description='Backup to a remote location using Borg.')
-parser.add_argument('--config', nargs='?', type=str, help='json config file path')
-parser.add_argument('--export_borg_variables', action='store_true', help='export vars for work with borg program')
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(prog='backupctl', description='Backup to a remote location using Borg.')
+    parser.add_argument('--config', nargs='?', type=str, help='json config file path')
+    parser.add_argument('--export_borg_variables', action='store_true', help='export vars for work with borg program')
 
-subparsers = parser.add_subparsers(title='commands', dest='subcommand')
-parser_init = subparsers.add_parser('init', help='create a repository')
-parser_backup = subparsers.add_parser('backup', help='make a backup of system')
-parser_backup.add_argument('BTRFS_SNAPSHOT', nargs='?', help='for btrfs snapshots. alternative os root path.')
-parser_list = subparsers.add_parser('list', help='show backups names list')
-parser_info = subparsers.add_parser('info', help='show backup info by name')
-parser_info.add_argument('BACKUPNAME', nargs='?')
-parser_prune = subparsers.add_parser('prune', help='delete useless backups')
-parser_mount = subparsers.add_parser('mount', help='FUSE readonly mount all backup images !VIEW ONLY!')
-parser_mount.add_argument('MOUNTPOINT', help='where readonly mounting all backups')
-parser_extract = subparsers.add_parser('extract',
-                                       help='Extract archive by name to CURRENT DIRECTORY. so make sure you cd to the right')
-parser_extract.add_argument('BACKUPNAME')
-parser_extract.add_argument('PATH', nargs='?',
-                            help='paths to extract (What only to extract from backup); patterns are supported')
+    subparsers = parser.add_subparsers(title='commands', dest='subcommand')
+    parser_init = subparsers.add_parser('init', help='create a repository')
+    parser_backup = subparsers.add_parser('backup', help='make a backup of system')
+    parser_backup.add_argument('BTRFS_SNAPSHOT', nargs='?', help='for btrfs snapshots. alternative os root path.')
+    parser_list = subparsers.add_parser('list', help='show backups names list')
+    parser_info = subparsers.add_parser('info', help='show backup info by name')
+    parser_info.add_argument('BACKUPNAME', nargs='?')
+    parser_prune = subparsers.add_parser('prune', help='delete useless backups')
+    parser_mount = subparsers.add_parser('mount', help='FUSE readonly mount all backup images !VIEW ONLY!')
+    parser_mount.add_argument('MOUNTPOINT', help='where readonly mounting all backups')
+    parser_extract = subparsers.add_parser('extract',
+                                           help='Extract archive by name to CURRENT DIRECTORY. so make sure you cd to the right')
+    parser_extract.add_argument('BACKUPNAME')
+    parser_extract.add_argument('PATH', nargs='?',
+                                help='paths to extract (What only to extract from backup); patterns are supported')
 
-args = parser.parse_args()
+    args = parser.parse_args()
 
-if args.config is not None:
-    config = Config.read_from_file(args.config)
-else:
-    config = Config.read_from_file(Config.DEFAULT_CONFIG_FILE_FS_PATH)
-backupctl = BackupCTL(config)
+    if args.config is not None:
+        config = Config.read_from_file(args.config)
+    else:
+        config = Config.read_from_file(Config.DEFAULT_CONFIG_FILE_FS_PATH)
+    backupctl = BackupCTL(config)
 
-if args.export_borg_variables:
-    print(backupctl.export_borg_variables())
+    if args.export_borg_variables:
+        print(backupctl.export_borg_variables())
 
-match args.subcommand:
-    case 'init':
-        backupctl.init()
-    case 'backup':
-        if args.BTRFS_SNAPSHOT is not None:
-            backupctl.backup(args.BTRFS_SNAPSHOT)
-        else:
-            backupctl.backup()
-    case 'list':
-        backupctl.show_list()
-    case 'info':
-        if args.BACKUPNAME is not None:
-            backupctl.show_info(args.BACKUPNAME)
-        else:
-            backupctl.show_info(None)
-    case 'prune':
-        backupctl.prune()
-    case 'mount':
-        backupctl.mount_fuse_all_backups(args.MOUNTPOINT)
-    case 'extract':
-        print("Extract archive by name to CURRENT DIRECTORY. so make sure you cd to the right.")
-        answer = input("Continue? [N/y]")
-        if answer in ('y', 'Y', 'Yes'):
-            if args.PATH is not None:
-                backupctl.extract(args.BACKUPNAME, args.PATH)
+    match args.subcommand:
+        case 'init':
+            backupctl.init()
+        case 'backup':
+            if args.BTRFS_SNAPSHOT is not None:
+                backupctl.backup(args.BTRFS_SNAPSHOT)
             else:
-                backupctl.extract(args.BACKUPNAME, None)
-        else:
-            print("interrupt.")
-            exit()
+                backupctl.backup()
+        case 'list':
+            backupctl.show_list()
+        case 'info':
+            if args.BACKUPNAME is not None:
+                backupctl.show_info(args.BACKUPNAME)
+            else:
+                backupctl.show_info(None)
+        case 'prune':
+            backupctl.prune()
+        case 'mount':
+            backupctl.mount_fuse_all_backups(args.MOUNTPOINT)
+        case 'extract':
+            print("Extract archive by name to CURRENT DIRECTORY. so make sure you cd to the right.")
+            answer = input("Continue? [N/y]")
+            if answer in ('y', 'Y', 'Yes'):
+                if args.PATH is not None:
+                    backupctl.extract(args.BACKUPNAME, args.PATH)
+                else:
+                    backupctl.extract(args.BACKUPNAME, None)
+            else:
+                print("interrupt.")
+                exit()
