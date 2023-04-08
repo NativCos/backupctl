@@ -64,16 +64,20 @@ class BackupCTL:
         """Whole exclude file for borg create.
         :return TextIO: path to temp exclude file
         """
-        if os.path.exists('/tmp/backupctl-exclude'):
-            os.remove('/tmp/backupctl-exclude')
-        temp_exclude_file = open('/tmp/backupctl-exclude', 'xt', newline='\n')
-        with open(self.config.DEFAULT_CONFIG_EXCLUDE_FILE, 'r') as default_exclude:
+        NEW_EXCLUDE_FILE = '/tmp/backupctl-exclude'
+        if os.path.exists(NEW_EXCLUDE_FILE) and os.path.isfile(NEW_EXCLUDE_FILE):
+            os.remove(NEW_EXCLUDE_FILE)
+        temp_exclude_file = open(NEW_EXCLUDE_FILE, 'wt', newline='\n')
+        with open(self.config.DEFAULT_CONFIG_EXCLUDE_FILE, 'rt', newline='\n') as default_exclude:
             temp_exclude_file.writelines(default_exclude.readlines())
 
         # users excludes (only files from '/home/$USER/' dirs)
         for user_dir in os.listdir('/home'):
+            user_abs_path_dir = os.path.join('/home', user_dir)
+            if not os.path.isdir(user_abs_path_dir):
+                continue
             # walk in user dir
-            for root_dir, dirs, files in os.walk(os.path.join('/home', user_dir), onerror=None, followlinks=False):
+            for root_dir, dirs, files in os.walk(user_abs_path_dir, onerror=None, followlinks=False):
                 # we are find a special EXCLUDE_USER_FILE_NAME config file
                 if EXCLUDE_USER_FILE_NAME in files:
                     # open EXCLUDE_USER_FILE_NAME file
