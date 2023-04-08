@@ -7,6 +7,8 @@ import subprocess
 import logging
 
 
+EXCLUDE_USER_FILE_NAME = '.backupctlignore'
+
 _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)
 _logger.addHandler(logging.StreamHandler(sys.stderr))
@@ -38,8 +40,8 @@ class Config:
 
     def make_borg_variables(self):
         return f"BORG_RSH=\"ssh -i {self.SSH_PATH_TO_KEY} -o ServerAliveInterval=10 -o ServerAliveCountMax=60\"" + \
-               f" BORG_REPO={self.SSH_PATH_TO_REPO}" + \
-               f" BORG_PASSPHRASE={self.PASSPHRASE}"
+            f" BORG_REPO={self.SSH_PATH_TO_REPO}" + \
+            f" BORG_PASSPHRASE={self.PASSPHRASE}"
 
     def check_correctness_config(self):
         if self.PASSPHRASE is None or not isinstance(self.PASSPHRASE, str) or len(self.PASSPHRASE) == 0:
@@ -53,10 +55,49 @@ class Config:
 
 
 class BackupCTL:
-    config = None
+    config: Config = None
 
-    def __init__(self, config):
+    def __init__(self, config: Config):
         self.config = config
+
+    def _create_exclude_file(self):
+        """Whole exclude file for borg create.
+        :return TextIO: path to temp exclude file
+        """
+        if os.path.exists('/tmp/backupctl-exclude'):
+            os.remove('/tmp/backupctl-exclude')
+        temp_exclude_file = open('/tmp/backupctl-exclude', 'xt', newline='\n')
+        with open(self.config.DEFAULT_CONFIG_EXCLUDE_FILE, 'r') as default_exclude:
+            temp_exclude_file.writelines(default_exclude.readlines())
+
+        # users excludes (only files from '/home/$USER/' dirs)
+        for user_dir in os.listdir('/home'):
+            # walk in user dir
+            for root_dir, dirs, files in os.walk(os.path.join('/home', user_dir), onerror=None, followlinks=False):
+                # we are find a special EXCLUDE_USER_FILE_NAME config file
+                if EXCLUDE_USER_FILE_NAME in files:
+                    # open EXCLUDE_USER_FILE_NAME file
+                    with open(os.path.join(root_dir, EXCLUDE_USER_FILE_NAME), 'rt') as user_exclude_file:
+                        # read each line (file must be special format. one file - one exclude path)
+                        for one_exclude in user_exclude_file.readlines():
+                            if one_exclude == '\n' or one_exclude == '':
+                                continue
+                            one_exclude.replace('\n', '')
+                            # getting normalized absolutist file name from EXCLUDE_USER_FILE_NAME
+                            if one_exclude[0] == '/':
+                                # already abs
+                                one_exclude = one_exclude
+                            else:
+                                one_exclude = os.path.join(root_dir, one_exclude)
+                            # check security - only the user's personnel file is excluded
+                            if '..' in one_exclude:
+                                _logger.error(f'go to parent dir is forbidden! "{one_exclude}" is skipped from file {os.path.join(root_dir, EXCLUDE_USER_FILE_NAME)}')
+                                # skip this one exclude
+                                continue
+                            temp_exclude_file.write(one_exclude + '\n')
+
+        temp_exclude_file.close()
+        return temp_exclude_file
 
     def init(self):
         """Borg init repo"""
@@ -70,10 +111,12 @@ class BackupCTL:
         if not os.path.exists(path_of_archiving):
             raise RuntimeError("path of archiving not exist")
         os.chdir(path_of_archiving)
+        temp_exclude_file = self._create_exclude_file()
         subprocess.run(
             self.config.make_borg_variables() + \
-            f" borg create -v --stats --progress --exclude-from {self.config.DEFAULT_CONFIG_EXCLUDE_FILE} --compression lz4 ::$(hostname -s)_$(date -Iseconds) .",
+            f" borg create -v --stats --progress --exclude-from {temp_exclude_file.name} --compression lz4 ::$(hostname -s)_$(date -Iseconds) .",
             shell=True, stderr=sys.stderr, stdout=sys.stdout)
+        os.remove(temp_exclude_file.name)
 
     def show_list(self):
         """Print backups names"""
@@ -144,10 +187,11 @@ parser_info.add_argument('BACKUPNAME', nargs='?')
 parser_prune = subparsers.add_parser('prune', help='delete useless backups')
 parser_mount = subparsers.add_parser('mount', help='FUSE readonly mount all backup images !VIEW ONLY!')
 parser_mount.add_argument('MOUNTPOINT', help='where readonly mounting all backups')
-parser_extract = subparsers.add_parser('extract', help='Extract archive by name to CURRENT DIRECTORY. so make sure you cd to the right')
+parser_extract = subparsers.add_parser('extract',
+                                       help='Extract archive by name to CURRENT DIRECTORY. so make sure you cd to the right')
 parser_extract.add_argument('BACKUPNAME')
-parser_extract.add_argument('PATH', nargs='?', help='paths to extract (What only to extract from backup); patterns are supported')
-
+parser_extract.add_argument('PATH', nargs='?',
+                            help='paths to extract (What only to extract from backup); patterns are supported')
 
 args = parser.parse_args()
 
