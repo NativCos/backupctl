@@ -60,46 +60,55 @@ class BackupCTL:
     def __init__(self, config: Config):
         self.config = config
 
+    def _pars_user_exclude_file(self, root_dir):
+        """
+        :param root_dir: dir that contains EXCLUDE_USER_FILE_NAME
+        :return list[str]: exclude puths list
+        """
+        # TODO: check: 1)file correct 2)regular expressions 3)file permission
+        excludes = []
+        # open EXCLUDE_USER_FILE_NAME file
+        with open(os.path.join(root_dir, EXCLUDE_USER_FILE_NAME), 'rt') as user_exclude_file:
+            # read each line (file must be special format. one file - one exclude path)
+            for one_exclude in user_exclude_file.readlines():
+                if one_exclude == '\n' or one_exclude == '':
+                    continue
+                one_exclude.replace('\n', '')
+                # getting normalized absolutist file name from EXCLUDE_USER_FILE_NAME
+                if one_exclude[0] == '/':
+                    # already abs
+                    one_exclude = one_exclude
+                else:
+                    one_exclude = os.path.join(root_dir, one_exclude)
+                # check security - only the user's personnel file is excluded
+                if '..' in one_exclude:
+                    _logger.error(
+                        f'go to parent dir is forbidden! "{one_exclude}" is skipped from file {os.path.join(root_dir, EXCLUDE_USER_FILE_NAME)}')
+                    # skip this one exclude
+                    continue
+                excludes.append(one_exclude)
+        return excludes
+
     def _create_exclude_file(self):
         """Whole exclude file for borg create.
         :return TextIO: path to temp exclude file
         """
-        NEW_EXCLUDE_FILE = '/tmp/backupctl-exclude'
-        if os.path.exists(NEW_EXCLUDE_FILE) and os.path.isfile(NEW_EXCLUDE_FILE):
-            os.remove(NEW_EXCLUDE_FILE)
-        temp_exclude_file = open(NEW_EXCLUDE_FILE, 'wt', newline='\n')
+        new_exclude_file = '/tmp/backupctl-exclude'
+        if os.path.exists(new_exclude_file) and os.path.isfile(new_exclude_file):
+            os.remove(new_exclude_file)
+        temp_exclude_file = open(new_exclude_file, 'wt', newline='\n')
+
+        # system exclude
         with open(self.config.DEFAULT_CONFIG_EXCLUDE_FILE, 'rt', newline='\n') as default_exclude:
             temp_exclude_file.writelines(default_exclude.readlines())
 
         # users excludes (only files from '/home/$USER/' dirs)
-        for user_dir in os.listdir('/home'):
-            user_abs_path_dir = os.path.join('/home', user_dir)
-            if not os.path.isdir(user_abs_path_dir):
-                continue
+        for user_dir in [os.path.join('/home', d) for d in os.listdir('/home') if os.path.isdir(d)]:
             # walk in user dir
-            for root_dir, dirs, files in os.walk(user_abs_path_dir, onerror=None, followlinks=False):
+            for root_dir, dirs, files in os.walk(user_dir, onerror=None, followlinks=False):
                 # we are find a special EXCLUDE_USER_FILE_NAME config file
                 if EXCLUDE_USER_FILE_NAME in files:
-                    # open EXCLUDE_USER_FILE_NAME file
-                    with open(os.path.join(root_dir, EXCLUDE_USER_FILE_NAME), 'rt') as user_exclude_file:
-                        # read each line (file must be special format. one file - one exclude path)
-                        for one_exclude in user_exclude_file.readlines():
-                            if one_exclude == '\n' or one_exclude == '':
-                                continue
-                            one_exclude.replace('\n', '')
-                            # getting normalized absolutist file name from EXCLUDE_USER_FILE_NAME
-                            if one_exclude[0] == '/':
-                                # already abs
-                                one_exclude = one_exclude
-                            else:
-                                one_exclude = os.path.join(root_dir, one_exclude)
-                            # check security - only the user's personnel file is excluded
-                            if '..' in one_exclude:
-                                _logger.error(f'go to parent dir is forbidden! "{one_exclude}" is skipped from file {os.path.join(root_dir, EXCLUDE_USER_FILE_NAME)}')
-                                # skip this one exclude
-                                continue
-                            temp_exclude_file.write(one_exclude + '\n')
-
+                    temp_exclude_file.writelines(self._pars_user_exclude_file(root_dir))
         temp_exclude_file.close()
         return temp_exclude_file
 
