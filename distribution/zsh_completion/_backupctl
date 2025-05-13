@@ -1,0 +1,28 @@
+#compdef backupctl
+
+_snapshot() {
+    _arguments 'BTRFS_SNAPSHOT[for btrfs snapshots. alternative os root path.]'
+}
+
+_commands() {
+    local -a command
+    command=(
+        "init:create a repository"
+        "backup:make a backup of system"
+        "list:show backups names list"
+        "info:show backup info by name"
+        "prune:delete useless backups"
+        "mount:FUSE readonly mount all backup images !VIEW ONLY!"
+        "extract:Extract archive by name to CURRENT DIRECTORY. so make sure you cd to the right"
+        )
+    _describe -t command 'command' command
+}
+
+_main() {
+    _arguments \
+    '--config[json config file path]:filename:_files' \
+    '--export_borg_variables[export vars for work with borg program]' \
+    '1:subcommand:_commands'
+}
+
+_main "$@"
