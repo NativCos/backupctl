@@ -67,7 +67,8 @@ class BackupCTL:
         """
         # TODO: check: 1)file correct 2)regular expressions 3)file permission
         excludes = []
-        # open EXCLUDE_USER_FILE_NAME file
+        # open EXCLUDE_USER_FILE_NAME
+        
         with open(os.path.join(root_dir, EXCLUDE_USER_FILE_NAME), 'rt') as user_exclude_file:
             # read each line (file must be special format. one file - one exclude path)
             for one_exclude in user_exclude_file.readlines():
@@ -158,6 +159,7 @@ class BackupCTL:
             " borg compact",
             shell=True, stderr=sys.stderr, stdout=sys.stdout)
 
+    @deprecated
     def mount_fuse_all_backups(self, mountpoint: str):
         """FUSE readonly mount all backup images !VIEW ONLY!"""
         if not os.path.exists(mountpoint):
@@ -236,7 +238,8 @@ if __name__ == '__main__':
         case 'prune':
             backupctl.prune()
         case 'mount':
-            backupctl.mount_fuse_all_backups(args.MOUNTPOINT)
+            print("method is Deprecated")
+            #backupctl.mount_fuse_all_backups(args.MOUNTPOINT)
         case 'extract':
             print("Extract archive by name to CURRENT DIRECTORY. so make sure you cd to the right.")
             answer = input("Continue? [N/y]")
